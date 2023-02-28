@@ -38,6 +38,68 @@ const REDIS_VAL = {
 class WebhookService extends Service {
 const axios = require('axios');
 
+async function sendToDingTalk(webhookUrl, notification) {
+  const message = {
+    msgtype: 'markdown',
+    markdown: {
+      title: {
+        content: notification.projectName
+      },
+      text: {
+        content: notification.text
+      }
+    }
+  };
+
+  try {
+    const response = await axios.post(webhookUrl, message);
+    console.log(`Message sent: ${notification.projectName}`);
+    console.log(`Response: ${response.data}`);
+  } catch (error) {
+    console.error(`Error sending message: ${error}`);
+  }
+}
+
+module.exports = (app) => {
+  app.post('/webhook', async (ctx) => {
+    const { event_name: eventName, object_kind: objectKind, project, object_attributes: objectAttributes, merge_request: mergeRequest, build_status: buildStatus } = ctx.request.body;
+    const { name: projectName } = project;
+
+    switch (objectKind) {
+      case 'push':
+        await sendToDingTalk(process.env.DINGTALK_WEBHOOK_URL, {
+          projectName,
+          text: `项目 ${projectName} 收到推送，最新提交：\n${objectAttributes.commits.map(commit => `- ${commit.message} - ${commit.author.name}`).join('\n')}`
+        });
+        break;
+      case 'tag_push':
+        await sendToDingTalk(process.env.DINGTALK_WEBHOOK_URL, {
+          projectName,
+          text: `项目 ${projectName} 收到标签推送，最新标签：${objectAttributes.tag}`
+        });
+        break;
+      case 'merge_request':
+        await sendToDingTalk(process.env.DINGTALK_WEBHOOK_URL, {
+          projectName,
+          text: `项目 ${projectName} 收到合并请求，标题：${mergeRequest.title}，状态：${mergeRequest.state}`
+        });
+        break;
+      case 'pipeline':
+        await sendToDingTalk(process.env.DINGTALK_WEBHOOK_URL, {
+          projectName,
+          text: `项目 ${projectName} 收到流水线通知，状态：${buildStatus}`
+        });
+        break;
+      default:
+        break;
+    }
+
+    ctx.body = '';
+  });
+};
+}
+/*const axios = require('axios');
+
 const webhookUrl = 'https://oapi.dingtalk.com/robot/send?access_token=36c4f38e03d9b98f1ca136d7e6fe854078440981c5f4e14824561353a5fad259';
 
 async function sendNotification(notification) {
@@ -79,6 +141,7 @@ async function sendToDingTalk(webhookUrl, notification) {
     console.error(`Error sending message: ${error}`);
   }
 }
+*/
 
 /*async translateMsg(data) {
   const {
