@@ -61,6 +61,24 @@ module.exports = {
   sendNotification,
 };
 }
+//分割
+async function sendToDingTalk(webhookUrl, notification) {
+  const message = {
+    msgtype: 'markdown',
+    markdown: {
+      title: notification.projectName,
+      text: notification.text,
+    },
+  };
+
+  try {
+    const response = await axios.post(webhookUrl, message);
+    console.log(`Message sent: ${notification.projectName}`);
+    console.log(`Response: ${response.data}`);
+  } catch (error) {
+    console.error(`Error sending message: ${error}`);
+  }
+}
 
 /*async translateMsg(data) {
   const {
