@@ -36,8 +36,33 @@ const REDIS_VAL = {
 }
 
 class WebhookService extends Service {
+const axios = require('axios');
 
-async translateMsg(data) {
+const webhookUrl = 'https://oapi.dingtalk.com/robot/send?access_token=36c4f38e03d9b98f1ca136d7e6fe854078440981c5f4e14824561353a5fad259';
+
+async function sendNotification(notification) {
+  const message = {
+    msgtype: 'text',
+    text: {
+      content: notification,
+    },
+  };
+
+  try {
+    const response = await axios.post(webhookUrl, message);
+    console.log(`Message sent: ${notification}`);
+    console.log(`Response: ${response.data}`);
+  } catch (error) {
+    console.error(`Error sending message: ${error}`);
+  }
+}
+
+module.exports = {
+  sendNotification,
+};
+}
+
+/*async translateMsg(data) {
   const {
     object_kind,
     ref,
@@ -100,7 +125,7 @@ async translateMsg(data) {
 
   return message;
 }
-
+*/
   async assemblePushMsg(content, { user_name, ref, project, commits, total_commits_count, before, after }) {
     const { name: projName, web_url, path_with_namespace } = project || {};
 
